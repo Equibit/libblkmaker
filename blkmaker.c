@@ -186,7 +186,7 @@ uint64_t blkmk_init_generation3(blktemplate_t * const tmpl, const void * const s
 	if (scriptsz >= 0xfd)
 		return 0;
 	
-	unsigned char *data = malloc(168 + scriptsz);
+	unsigned char *data = malloc(170 + scriptsz);
 	size_t off = 0;
 	if (!data)
 		return 0;
@@ -246,6 +246,12 @@ uint64_t blkmk_init_generation3(blktemplate_t * const tmpl, const void * const s
 	}
 	memset(&data[off], 0, 4);  // lock time
 	off += 4;
+
+	memcpy(&data[off],
+		"\x00" // EQB_Types::COINBASE
+		"\x00" // EQB payload (empty, size=0)
+		, 2);
+	off += 2;
 	
 	const unsigned long pretx_size = libblkmaker_blkheader_size + blkmk_varint_encode_size(1 + tmpl->txncount);
 	const int16_t sigops_counted = blkmk_count_sigops(script, scriptsz, tmpl->_bip141_sigops);

@@ -55,9 +55,13 @@ void send_json(json_t *req) {
 	free(s);
 }
 
-static
-bool my_sha256(void *digest, const void *buffer, size_t length) {
+static bool my_sha2_256(void *digest, const void *buffer, size_t length) {
 	gcry_md_hash_buffer(GCRY_MD_SHA256, digest, buffer, length);
+	return true;
+}
+
+static bool my_sha3_256(void *digest, const void *buffer, size_t length) {
+	gcry_md_hash_buffer(GCRY_MD_SHA3_256, digest, buffer, length);
 	return true;
 }
 
@@ -67,8 +71,8 @@ int main(int argc, char**argv) {
 	json_error_t jsone;
 	const char *err;
 	
-	b58_sha256_impl = my_sha256;
-	blkmk_sha256_impl = my_sha256;
+	b58_sha256_impl = my_sha2_256;
+	blkmk_sha256_impl = my_sha3_256;
 	
 	testb58();
 	
@@ -112,8 +116,7 @@ int main(int argc, char**argv) {
 		for (nonce = 0; nonce < 0xffffffff; ++nonce)
 		{
 			*(uint32_t*)(&data[76]) = nonce;
-			assert(my_sha256(hash, data, 80));
-			assert(my_sha256(hash, hash, 32));
+			assert(my_sha3_256(hash, data, 80));
 			if (!*(uint32_t*)(&hash[28]))
 				break;
 			if (!(nonce % 0x1000))

@@ -40,35 +40,66 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 	int addrver;
 	size_t rv;
 
-    uint8_t data[82];
-    char hrp[84];
-    char witdest[65];
+	uint8_t data[82];
+	char hrp[84];
+	char witdest[65];
+	char rebuild[92];
+	uint8_t witprog[40];
+	size_t witprog_len;
+	int witver;
+	uint8_t scriptpubkey[42];
+	size_t scriptpubkey_len;
 
-    printf(">>> blkmk_address_to_script=%s\n", addr);
+	printf(">>> blkmk_address_to_script=%s\n", addr);
+
+	if (bech32_decode(hrp, data, &rv, addr)) {
+
+#ifndef TEMP
+		_blkmk_bin2hex(witdest, &data[1], 32);
+		printf(">>> bech32 succeeded! hrp=%s len=%d ver=%d witdest=0x%s\n", hrp, rv, data[0], witdest);
+
+		if (!bech32_encode(rebuild, hrp, data, rv)) {
+			printf(">>> bech32 rebuild failed\n");
+			return 0;
+		}
+
+		if (!strcmpi(rebuild, data)) {
+			printf(">>> bech32 rebuild different %s\n", rebuild);
+			return 0;
+		}
+		else {
+			printf(">>> bech32 rebuild same %s\n", rebuild);
+		}
+#endif
+
+		if (segwit_addr_decode(&witver, witprog, &witprog_len, hrp, addr)) {
+
+			_blkmk_bin2hex(witdest, witprog, witprog_len);
+			printf(">>> segwit_addr_decode success! ver=%d len=%d witprog=%s\n", witver, witprog_len, witdest);
+
+			if (witver == 0) {
+				rv = witprog_len + 2;
+
+				if (outsz == rv) {
+					cout[0] = 0x00;         // OP_0
+					cout[1] = witprog_len;  // push size of script
+					memcpy(&cout[2], witprog, witprog_len);
+				}
+			}
+		}
+
+		return rv;
+	}
 	
-    rv = sizeof(addrbin);
+	rv = sizeof(addrbin);
 	if (!b58_sha256_impl)
 		b58_sha256_impl = blkmk_sha256_impl;
-    if (!b58tobin(addrbin, &rv, addr, b58sz)) {
-        printf(">>> b58tobin failed on %s... trying bech32\n", addr);
-        if (!bech32_decode(hrp, data, &rv, addr)) {
-            printf(">>> bech32 failed too\n");
-            return 0;
-        }
-        else {
-            _blkmk_bin2hex(witdest, &data[1], 32);
-            printf(">>> bech32 succeeded! hrp=%s len=%d ver=%d witdest=0x%s\n", hrp, rv, data[0], witdest);
-            if (outsz == (rv = 34)) {
-                cout[0] = 0x00; // OP_0
-                cout[1] = 0x20; // push 32 bytes
-                memcpy(&cout[2], &data[1], 32);
-            }
-            return 0;
-        }
-    }
+	if (!b58tobin(addrbin, &rv, addr, b58sz))
+		return 0;
+ 
 	addrver = b58check(addrbin, sizeof(addrbin), addr, b58sz);
-    
-    printf(">>> addrver=%d\n", addrver);
+	
+	printf(">>> addrver=%d\n", addrver);
 
 	switch (addrver) {
 		case   0:  // Bitcoin pubkey hash

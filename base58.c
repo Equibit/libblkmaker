@@ -11,11 +11,13 @@
 #include <winsock2.h>
 #endif
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
 #include <libbase58.h>
+#include <segwit_addr.h>
 
 #include <blkmaker.h>
 
@@ -37,13 +39,37 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 	const size_t b58sz = strlen(addr);
 	int addrver;
 	size_t rv;
+
+    uint8_t data[82];
+    char hrp[84];
+    char witdest[65];
+
+    printf(">>> blkmk_address_to_script=%s\n", addr);
 	
-	rv = sizeof(addrbin);
+    rv = sizeof(addrbin);
 	if (!b58_sha256_impl)
 		b58_sha256_impl = blkmk_sha256_impl;
-	if (!b58tobin(addrbin, &rv, addr, b58sz))
-		return 0;
+    if (!b58tobin(addrbin, &rv, addr, b58sz)) {
+        printf(">>> b58tobin failed on %s... trying bech32\n", addr);
+        if (!bech32_decode(hrp, data, &rv, addr)) {
+            printf(">>> bech32 failed too\n");
+            return 0;
+        }
+        else {
+            _blkmk_bin2hex(witdest, &data[1], 32);
+            printf(">>> bech32 succeeded! hrp=%s len=%d ver=%d witdest=0x%s\n", hrp, rv, data[0], witdest);
+            if (outsz == (rv = 34)) {
+                cout[0] = 0x00; // OP_0
+                cout[1] = 0x20; // push 32 bytes
+                memcpy(&cout[2], &data[1], 32);
+            }
+            return 0;
+        }
+    }
 	addrver = b58check(addrbin, sizeof(addrbin), addr, b58sz);
+    
+    printf(">>> addrver=%d\n", addrver);
+
 	switch (addrver) {
 		case   0:  // Bitcoin pubkey hash
 		case 111:  // Testnet pubkey hash

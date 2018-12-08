@@ -53,14 +53,13 @@ void my_htole64(unsigned char *buf, uint64_t n) {
 		buf[i] = (n >>  (8*i)) & 0xff;
 }
 
-
 bool (*blkmk_sha256_impl)(void *, const void *, size_t) = NULL;
 
-bool _blkmk_dblsha256(void *hash, const void *data, size_t datasz) {
-	return blkmk_sha256_impl(hash, data, datasz) && blkmk_sha256_impl(hash, hash, 32);
+bool _blkmk_sha256(void *hash, const void *data, size_t datasz) {
+	return blkmk_sha256_impl(hash, data, datasz);
 }
 
-#define dblsha256 _blkmk_dblsha256
+#define sha256 _blkmk_sha256
 
 static
 size_t varintDecode(const uint8_t *p, size_t size, uint64_t *n)
@@ -187,7 +186,7 @@ uint64_t blkmk_init_generation3(blktemplate_t * const tmpl, const void * const s
 	if (scriptsz >= 0xfd)
 		return 0;
 	
-	unsigned char *data = malloc(168 + scriptsz);
+	unsigned char *data = malloc(170 + scriptsz);
 	size_t off = 0;
 	if (!data)
 		return 0;
@@ -247,6 +246,12 @@ uint64_t blkmk_init_generation3(blktemplate_t * const tmpl, const void * const s
 	}
 	memset(&data[off], 0, 4);  // lock time
 	off += 4;
+
+	memcpy(&data[off],
+		"\x00" // EQB_Types::COINBASE
+		"\x00" // EQB payload (empty, size=0)
+		, 2);
+	off += 2;
 	
 	const unsigned long pretx_size = libblkmaker_blkheader_size + blkmk_varint_encode_size(1 + tmpl->txncount);
 	const int16_t sigops_counted = blkmk_count_sigops(script, scriptsz, tmpl->_bip141_sigops);
@@ -304,7 +309,7 @@ bool blkmk_hash_transactions(blktemplate_t * const tmpl)
 		if (txn->hash_)
 			continue;
 		txn->hash_ = malloc(sizeof(*txn->hash_));
-		if (!dblsha256(txn->hash_, txn->data, txn->datasz))
+		if (!sha256(txn->hash_, txn->data, txn->datasz))
 		{
 			free(txn->hash_);
 			return false;
@@ -362,7 +367,7 @@ bool blkmk_build_merkle_branches(blktemplate_t * const tmpl)
 		}
 		for (size_t i = 2; i < hashcount; i += 2)
 			// This is where we overlap input and output, on the first pair
-			if (!dblsha256(&hashes[i / 2], &hashes[i], sizeof(*hashes) * 2))
+			if (!sha256(&hashes[i / 2], &hashes[i], sizeof(*hashes) * 2))
 			{
 				free(branches);
 				free(hashes);
@@ -387,14 +392,14 @@ bool build_merkle_root(unsigned char *mrklroot_out, blktemplate_t *tmpl, unsigne
 	if (!blkmk_build_merkle_branches(tmpl))
 		return false;
 	
-	if (!dblsha256(&hashes[0], cbtxndata, cbtxndatasz))
+	if (!sha256(&hashes[0], cbtxndata, cbtxndatasz))
 		return false;
 	
 	for (i = 0; i < tmpl->_mrklbranchcount; ++i)
 	{
 		memcpy(&hashes[1], tmpl->_mrklbranch[i], 0x20);
 		// This is where we overlap input and output, on the first pair
-		if (!dblsha256(&hashes[0], &hashes[0], 0x40))
+		if (!sha256(&hashes[0], &hashes[0], 0x40))
 			return false;
 	}
 	
@@ -437,7 +442,7 @@ bool _blkmk_calculate_witness_mrklroot(blktemplate_t * const tmpl, libblkmaker_h
 		}
 		for (size_t i = 0; i < hashcount; i += 2) {
 			// We overlap input and output here, on the first pair
-			if (!dblsha256(&hashes[i / 2], &hashes[i], sizeof(*hashes) * 2)) {
+			if (!sha256(&hashes[i / 2], &hashes[i], sizeof(*hashes) * 2)) {
 				free(hashes);
 				return false;
 			}
@@ -632,7 +637,7 @@ bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char 
 	libblkmaker_hash_t commitment;
 	memcpy(&merkle_with_nonce[0], tmpl->_witnessmrklroot, sizeof(*tmpl->_witnessmrklroot));
 	memcpy(&merkle_with_nonce[1], &witness_nonce, sizeof(witness_nonce));
-	if(!dblsha256(&commitment, &merkle_with_nonce[0], sizeof(merkle_with_nonce)))
+	if(!sha256(&commitment, &merkle_with_nonce[0], sizeof(merkle_with_nonce)))
 		return false;
 	
 	if (cbScriptSigLen >= *gentxsize) {

@@ -43,22 +43,13 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 	uint8_t data[82];
 	char hrp[84];
 	char witdest[65];
-	char rebuild[92];
 	uint8_t witprog[40];
 	size_t witprog_len;
 	int witver;
-	uint8_t scriptpubkey[42];
-	size_t scriptpubkey_len;
-
-	// printf(">>> blkmk_address_to_script=%s\n", addr);
 
 	if (bech32_decode(hrp, data, &rv, addr)) {
 
 		if (segwit_addr_decode(&witver, witprog, &witprog_len, hrp, addr)) {
-
-			//_blkmk_bin2hex(witdest, witprog, witprog_len);
-			//printf(">>> segwit_addr_decode success! ver=%d len=%d witprog=%s\n", witver, witprog_len, witdest);
-
 			if (witver == 0) {
 				if (outsz < (rv = witprog_len + 2))
 					return rv;
@@ -68,7 +59,6 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 				return rv;
 			}
 		}
-
 		return 0;
 	}
 	
@@ -76,10 +66,8 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 	if (!b58_sha256_impl)
 		b58_sha256_impl = blkmk_sha256_impl;
 	if (!b58tobin(addrbin, &rv, addr, b58sz))
-		return 0;
- 
+		return 0; 
 	addrver = b58check(addrbin, sizeof(addrbin), addr, b58sz);
-
 	switch (addrver) {
 		case   0:  // Bitcoin pubkey hash
 		case 111:  // Testnet pubkey hash

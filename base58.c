@@ -65,7 +65,7 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 	if (!b58_sha256_impl)
 		b58_sha256_impl = blkmk_sha256_impl;
 	if (!b58tobin(addrbin, &rv, addr, b58sz))
-		return 0; 
+		return 0;
 	addrver = b58check(addrbin, sizeof(addrbin), addr, b58sz);
 	switch (addrver) {
 		case   0:  // Bitcoin pubkey hash

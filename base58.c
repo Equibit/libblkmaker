@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <libbase58.h>
+#include <segwit_addr.h>
 
 #include <blkmaker.h>
 
@@ -37,6 +38,28 @@ size_t blkmk_address_to_script(void *out, size_t outsz, const char *addr) {
 	const size_t b58sz = strlen(addr);
 	int addrver;
 	size_t rv;
+
+	uint8_t data[82];
+	char hrp[84];
+	char witdest[65];
+	uint8_t witprog[40];
+	size_t witprog_len;
+	int witver;
+
+	if (bech32_decode(hrp, data, &rv, addr)) {
+
+		if (segwit_addr_decode(&witver, witprog, &witprog_len, hrp, addr)) {
+			if (witver == 0) {
+				if (outsz < (rv = witprog_len + 2))
+					return rv;
+				cout[0] = 0x00;         // OP_0
+				cout[1] = witprog_len;  // push size of script
+				memcpy(&cout[2], witprog, witprog_len);
+				return rv;
+			}
+		}
+		return 0;
+	}
 	
 	rv = sizeof(addrbin);
 	if (!b58_sha256_impl)

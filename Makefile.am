@@ -13,7 +13,9 @@ libblkmaker_@LIBBLKMAKER_API_VERSION@_la_SOURCES = \
 	blkmaker.c \
 	blktemplate.c \
 	hex.c \
-	private.h
+	private.h \
+	segwit_addr.c \
+	segwit_addr.h
 
 libblkmaker_@LIBBLKMAKER_API_VERSION@_la_CFLAGS = \
 	$(libbase58_CFLAGS)

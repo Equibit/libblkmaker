@@ -626,10 +626,6 @@ static const libblkmaker_hash_t witness_nonce = { 0 };
 
 static
 bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char * const gentxdata, size_t * const gentxsize) {
-
-    fprintf(stderr, "\n>> _blkmk_insert_witness_commitment\n");
-    fprintf(stderr, ">> gentxsize=%d\n", *gentxsize);
-
 	if (!_blkmk_witness_mrklroot(tmpl)) {
 		return false;
 	}
@@ -654,14 +650,11 @@ bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char 
 		return false;
 	}
 
-    fprintf(stderr, ">> offset_of_txout_count=%d\n", offset_of_txout_count);
-
 	uint64_t txout_count;
 	const size_t in_txout_count_size = varintDecode(&gentxdata[offset_of_txout_count], *gentxsize - offset_of_txout_count, &txout_count);
 	if (!in_txout_count_size) {
 		return false;
 	}
-    fprintf(stderr, ">> in_txout_count_size=%d\n", in_txout_count_size);
 	++txout_count;
 	unsigned char insertbuf[max_varint_size + commitment_txout_size];
 	const size_t out_txout_count_size = varintEncode(insertbuf, txout_count);
@@ -686,10 +679,6 @@ bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char 
 	memcpy(&gentxdata[offset_of_commitment_txout_o], commitment_txout, commitment_txout_size);
 	
 	*gentxsize = offset_of_txtail_o + length_of_txtail;
-
-    fprintf(stderr, ">> offset_of_txtail_o=%d\n", offset_of_txtail_o);
-    fprintf(stderr, ">> length_of_txtail=%d\n", length_of_txtail);
-    fprintf(stderr, ">> gentxsize=%d\n", *gentxsize);
 
 	return true;
 }

@@ -5,7 +5,6 @@
  * under the terms of the standard MIT license.  See COPYING for more details.
  */
 
-#include <stdio.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -649,7 +648,6 @@ bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char 
 	if (offset_of_txout_count >= *gentxsize) {
 		return false;
 	}
-
 	uint64_t txout_count;
 	const size_t in_txout_count_size = varintDecode(&gentxdata[offset_of_txout_count], *gentxsize - offset_of_txout_count, &txout_count);
 	if (!in_txout_count_size) {
@@ -679,7 +677,7 @@ bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char 
 	memcpy(&gentxdata[offset_of_commitment_txout_o], commitment_txout, commitment_txout_size);
 	
 	*gentxsize = offset_of_txtail_o + length_of_txtail;
-
+	
 	return true;
 }
 

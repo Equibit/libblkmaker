@@ -664,9 +664,9 @@ bool _blkmk_insert_witness_commitment(blktemplate_t * const tmpl, unsigned char 
 	
 	const size_t offset_of_txout_data = (offset_of_txout_count + in_txout_count_size);
 	const size_t new_offset_of_preexisting_txout_data = (offset_of_txout_count + out_txout_count_size);
-	const size_t length_of_txtail = 4;
+	const size_t length_of_txtail = 6; // lock time + EQB fields
 	const size_t length_of_preexisting_txout_data = (*gentxsize - length_of_txtail) - offset_of_txout_data;
-	const size_t offset_of_txtail_i = *gentxsize - length_of_txtail;  // just the lock time
+	const size_t offset_of_txtail_i = *gentxsize - length_of_txtail; 
 	const size_t offset_of_txtail_o = offset_of_txtail_i + (out_txout_count_size - in_txout_count_size) + commitment_txout_size;
 	memmove(&gentxdata[offset_of_txtail_o], &gentxdata[offset_of_txtail_i], length_of_txtail);
 	if (offset_of_txout_data != new_offset_of_preexisting_txout_data) {
